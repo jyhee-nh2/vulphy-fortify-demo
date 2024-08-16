@@ -1,0 +1,126 @@
+name: SAST Scan
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches: [master]
+
+jobs:
+  sca-scan:
+    if: false
+    strategy:
+      fail-fast: false
+      # Prevent running multiple FoD scans on same release simultaneously
+      max-parallel: 1
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check Out Source Code
+        uses: actions/checkout@v4
+
+      - name: Nexus IQ for GitHub Actions
+        # You may pin to the exact commit or the version.
+        # uses: sonatype-nexus-community/iq-github-action@ef2fae57de0888b50cedf3c9e1c2886bf3e5f21a
+        uses: sonatype-nexus-community/iq-github-action@1.1.1
+        with:
+          serverUrl: ${{vars.NEXUSIQ_URL}}
+          username: jyhee
+          password: ${{secrets.IQ_TOKEN}}
+          applicationId: REACT-Feelio
+          stage: Build # default is Build
+          target: ./package-lock.json
+  
+  sast-scan:
+    # needs: sca-scan
+    strategy:
+      fail-fast: false
+      # Prevent running multiple FoD scans on same release simultaneously
+      max-parallel: 1
+      matrix:
+        os: [ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    
+    env:
+      SSC_URL: ${{vars.SSC_URL}}
+      SSC_TOKEN: ${{secrets.SSC_TOKEN}}
+      SC_SAST_TOKEN: ${{secrets.SC_SAST_TOKEN}}
+      
+    steps:
+      - name: Check Out Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v4.0.2
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4.2.1
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Verify Java Version
+        run: java --version
+      
+      - name: Set Scancentral Java Path
+        run: echo "SCANCENTRAL_JAVA_HOME=$JAVA_HOME" >> $GITHUB_ENV
+
+      # - name: Ping SSC server
+      #   run: ping equal-rabbit-novel.ngrok-free.app
+
+      # - name: Curl SSC URL
+      #   run: curl -v -L https://equal-rabbit-novel.ngrok-free.app/ssc
+        
+      - name: Setup Fortify tools
+        uses: fortify/github-action/setup@v1
+        with:
+          tool-definitions: https://github.com/fortify/tool-definitions/releases/download/v1/tool-definitions.yaml.zip
+          # export-path: true
+          fcli: latest
+          sc-client: 24.2.0
+          # fod-uploader: latest
+          # vuln-exporter: v2
+          # bugtracker-utility: skip
+          # debricked-cli: skip
+      
+      - name: Set Client Token for SAST Client
+        run: sed -i "s|client_auth_token=.*|client_auth_token=${{secrets.SC_SAST_TOKEN}}|" $SC_CLIENT_INSTALL_DIR/Core/config/client.properties
+        
+      - name: Run SAST Client Update
+        run: scancentral -url ${{vars.SAST_CTRL_URL}} update
+        
+      - name: Run SAST Scan using SAST Client
+        if: true
+        run: scancentral -url ${{vars.SAST_CTRL_URL}} start -upload -application "vulphy-demo" -version "1.0" -uptoken ${{secrets.SSC_TOKEN}} -pool "aea9e0ec-6b85-485b-a855-4d0260267e85" -block --output-file "sast.fpr" -log "sast.log" -pi 10
+        # run: scancentral -url ${{vars.SAST_CTRL_URL}} start -block --output-file "sast.fpr" -log "sast.log" -diag "debug.log" -pi 10
+            
+      - name: Run SAST Scan using Fortify Github Action
+        if: false
+        uses: fortify/github-action@v1
+        with:
+          sast-scan: true
+        env:
+          SSC_URL: ${{vars.SSC_URL}}
+          SSC_TOKEN: ${{secrets.SSC_TOKEN}}
+          SSC_APPVERSION: REACT:Feelio
+          SC_SAST_TOKEN: ${{secrets.SC_SAST_TOKEN}}
+          SC_SAST_SENSOR_VERSION: 24.2.0
+          DO_EXPORT: true
+          DO_WAIT: true
+          JOB_SUMMARY_ACTION_EXTRA_OPTS: --fs "Security Auditor View"
+
+      - name: Export SSC vulnerability data to GitHub
+        uses: fortify/github-action/ssc-export@v1
+        env:
+          SSC_URL: ${{vars.SSC_URL}}
+          SSC_TOKEN: ${{secrets.SSC_TOKEN}}
+          SSC_APPVERSION: "vulphy-demo:1.0"
+
+      - name: Publish Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4.3.4
+        with:
+          path: sast.fpr
+          retention-days: 1
+          overwrite: true
