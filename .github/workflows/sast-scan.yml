@@ -91,19 +91,19 @@ jobs:
         run: scancentral -url ${{vars.SAST_CTRL_URL}} update
         
       - name: Run SAST Scan using SAST Client
-        if: true
+        if: false
         run: scancentral -url ${{vars.SAST_CTRL_URL}} start -upload -application "vulphy-demo" -version "1.0" -uptoken ${{secrets.SSC_TOKEN}} -pool "aea9e0ec-6b85-485b-a855-4d0260267e85" -block --output-file "sast.fpr" -log "sast.log" -pi 10
         # run: scancentral -url ${{vars.SAST_CTRL_URL}} start -block --output-file "sast.fpr" -log "sast.log" -diag "debug.log" -pi 10
             
       - name: Run SAST Scan using Fortify Github Action
-        if: false
+        if: true
         uses: fortify/github-action@v1
         with:
           sast-scan: true
         env:
           SSC_URL: ${{vars.SSC_URL}}
           SSC_TOKEN: ${{secrets.SSC_TOKEN}}
-          SSC_APPVERSION: REACT:Feelio
+          SSC_APPVERSION: "vulphy-demo:1.0"
           SC_SAST_TOKEN: ${{secrets.SC_SAST_TOKEN}}
           SC_SAST_SENSOR_VERSION: 24.2.0
           DO_EXPORT: true
