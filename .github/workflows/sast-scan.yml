@@ -58,8 +58,9 @@ jobs:
       - name: Setup Java JDK
         uses: actions/setup-java@v4.2.1
         with:
-          distribution: temurin
+          distribution: microsoft
           java-version: 17
+          architecture: x64
 
       - name: Verify Java Version
         run: java --version
