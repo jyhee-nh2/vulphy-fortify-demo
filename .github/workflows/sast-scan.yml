@@ -87,7 +87,11 @@ jobs:
           # debricked-cli: skip
       
       - name: Set Client Token for SAST Client
-        run: sed -i "s|client_auth_token=.*|client_auth_token=${{secrets.SC_SAST_TOKEN}}|" $SC_CLIENT_INSTALL_DIR/Core/config/client.properties
+        #run: sed -i "s|client_auth_token=.*|client_auth_token=${{secrets.SC_SAST_TOKEN}}|" $SC_CLIENT_INSTALL_DIR/Core/config/client.properties
+        run: |
+          $filePath = "$env:SC_CLIENT_INSTALL_DIR\Core\config\client.properties"
+          (Get-Content $filePath) -replace 'client_auth_token=.*', "client_auth_token=$env:SC_SAST_TOKEN" | Set-Content $filePath
+        shell: pwsh
         
       - name: Run SAST Client Update
         run: scancentral -url ${{vars.SAST_CTRL_URL}} update
