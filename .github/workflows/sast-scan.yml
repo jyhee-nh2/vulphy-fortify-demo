@@ -55,12 +55,12 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4.0.2
 
-      - name: Setup Java JDK
-        uses: actions/setup-java@v4.2.1
-        with:
-          distribution: microsoft
-          java-version: 17
-          architecture: x64
+      # - name: Setup Java JDK
+      #   uses: actions/setup-java@v4.2.1
+      #   with:
+      #     distribution: microsoft
+      #     java-version: 17
+      #     architecture: x64
 
       - name: Verify Java Version
         run: java --version
