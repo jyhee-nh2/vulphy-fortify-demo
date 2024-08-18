@@ -40,7 +40,8 @@ jobs:
       max-parallel: 1
       matrix:
         os: [ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    #runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, NH2]
     
     env:
       SSC_URL: ${{vars.SSC_URL}}
