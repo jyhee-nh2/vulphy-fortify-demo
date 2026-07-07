@@ -28,7 +28,7 @@ jobs:
           iq-server-url: ${{vars.NEXUSIQ_URL}}
           username: jyhee
           password: ${{secrets.IQ_TOKEN}}
-          applicationId: REACT-Feelio
+          application-id: REACT-Feelio
           stage: Build # default is Build
           scan-targets: ./package-lock.json
   
